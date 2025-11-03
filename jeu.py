@@ -1,5 +1,4 @@
 from espace_aerien import EspaceAerien
-
 class Jeu:
     def __init__(self):
         self.espace = EspaceAerien()
@@ -9,4 +8,4 @@ class Jeu:
         self.espace.mettre_a_jour(dt)
         collisions = self.espace.detecter_collisions()
         if collisions:
-            print("Collision détectée !")
+            print("Collision détectée")
