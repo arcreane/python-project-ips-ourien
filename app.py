@@ -1,11 +1,21 @@
 
+import math
 class Avion:
 
-    def __init__(self,identifiant,vitesse,cap,altitude):
+    def __init__(self,identifiant,vitesse,cap,altitude,xa,ya):
         self.identifiant = identifiant
         self.vitesse = vitesse
         self.cap = cap
         self.altitude = altitude
+        self.xa = xa
+        self.ya = ya
+
+    def move(self, dt):
+        """Met à jour la position selon le cap et la vitesse"""
+        v = self.vitesse / 3600.0  # km/s
+        rad = math.radians(self.cap)
+        self.xa += v * dt * math.cos(rad)
+        self.ya += v * dt * math.sin(rad)
     def changement_vitesse(self,delta_v):
         self.vitesse += delta_v
     def changement_cap(self,delta_cap):
@@ -15,4 +25,3 @@ class Avion:
     def affiche(self):
         print(self.identifiant,self.vitesse,self.cap,self.altitude)
 
-A1 = Avion("AF012",800,249,10000)
