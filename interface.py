@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
     def the_button_was_clicked(self):
         for avion in self.avions:
             avion.changement_altitude(500)
-        print(f"L'altitude de l'{avion.identifiant} a augmentée de 500ft")
+        print(f"L'altitude de l'{avion.identifiant} a augmentée de 500ft pour atteindre {avion.altitude} ft")
 
 app = QApplication(sys.argv)
 
