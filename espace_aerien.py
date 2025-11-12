@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     # Création de 5 avions à des positions différentes
     avions = [
-        Avion("AF123", 900, 0, 15000, xa=0, ya=0),
+        Avion("AF123", 900, 0, 10000, xa=0, ya=0),
         Avion("BA456", 900, 180, 10000, xa=0.5, ya=0),  # proche de AF123
         Avion("LH789", 800, 90, 12000, xa=10, ya=10),
         Avion("KL101", 850, 270, 11000, xa=10.5, ya=10),  # proche de LH789
