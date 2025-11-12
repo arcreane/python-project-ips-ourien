@@ -1,7 +1,6 @@
-
 import math
 class Avion:
-
+    ALTITUDE_MAX = 36000
     def __init__(self,identifiant,vitesse,cap,altitude,xa,ya):
         self.identifiant = identifiant
         self.vitesse = vitesse
@@ -21,7 +20,16 @@ class Avion:
     def changement_cap(self,delta_cap):
         self.cap += delta_cap
     def changement_altitude(self,delta_altitude):
-        self.altitude += delta_altitude
+        if self.altitude > self.ALTITUDE_MAX:
+            self.altitude = self.ALTITUDE_MAX
+            print(f"{self.identifiant} ne peut pas dépasser {self.ALTITUDE_MAX} ft.")
+        elif self.altitude < 0:
+            self.altitude = 0
+            print(f"{self.identifiant} est au sol (0 ft).")
+        else:
+            self.altitude += delta_altitude
+            print(f"{self.identifiant} → altitude : {self.altitude} ft")
+
     def affiche(self):
         print(self.identifiant,self.vitesse,self.cap,self.altitude)
 
