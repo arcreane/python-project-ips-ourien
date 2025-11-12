@@ -16,4 +16,3 @@ class Avion:
         print(self.identifiant,self.vitesse,self.cap,self.altitude)
 
 A1 = Avion("AF012",800,249,10000)
-A1.affiche()
