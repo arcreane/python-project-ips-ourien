@@ -25,17 +25,61 @@ class MainWindow(QMainWindow):
         # Set the central widget of the Window.
         self.setCentralWidget(button)
     def the_button_was_clicked(self):
-        for avion in self.avions:
+        for avion in self.Avions:
             avion.changement_altitude(500)
-        print(f"L'altitude de l'{avion.identifiant} a augmentée de 500ft pour atteindre {avion.altitude} ft")
+        print(f"L'altitude de l'{Avion.identifiant} a augmentée de 500ft pour atteindre {Avion.altitude} ft")
 
 app = QApplication(sys.argv)
 
 window = MainWindow()
 window.show()
 
-app.exec()
-"""
+app.exec()"""
+
+"""import sys
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton
+from app import Avion
+
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("My App")
+
+        # Liste d'avions
+        self.Avions = [
+            Avion("AF123", 900, 0, 10000, xa=0,   ya=0),
+            Avion("BA456", 900, 180, 10000, xa=0.5, ya=0),
+            Avion("LH789", 800, 90, 12000, xa=10,  ya=10),
+            Avion("KL101", 850, 270, 11000, xa=10.5, ya=10),
+            Avion("UA202", 950, 45, 9000,  xa=50,  ya=50),
+        ]
+
+        # Bouton
+        button = QPushButton("Altitude +500 ft")
+        button.setCheckable(True)
+        button.clicked.connect(self.the_button_was_clicked)
+
+        # ENLEVER le setFixedSize → ça bloque toute la future interface 3 zones
+        # self.setFixedSize(QSize(400, 300))
+
+        self.setCentralWidget(button)
+
+    def the_button_was_clicked(self):
+        for avion in self.Avions:
+            avion.changement_altitude(500)
+            print(
+                f"L'altitude de l'avion {avion.identifiant} "
+                f"a augmenté à {avion.altitude} ft"
+            )
+
+
+app = QApplication(sys.argv)
+window = MainWindow()
+window.show()
+app.exec()"""
 
 import sys
 from PySide6.QtWidgets import (
@@ -107,3 +151,5 @@ class MainWindow(QMainWindow):
     if __name__ == "__main__":
         from utils import lancer_application
         lancer_application()
+
+

@@ -45,3 +45,26 @@ def lancer_application():
     window = MainWindow()
     window.showMaximized()
     return app.exec()
+
+    def tick(self, dt=1.0):
+        """Met à jour l'espace aérien (positions + collisions)"""
+        self.espace.maj(dt)
+        return self.espace.detect_collisions()
+
+
+
+# --------------------------------------------------------------------
+#  PARTIE 2 : Lancement global de l'application (ex-main.py)
+#  👉 ATTENTION : on NE lance rien ici, car interface.py exécutera ceci
+# --------------------------------------------------------------------
+def lancer_application():
+    """
+    Fonction appelée par interface.py pour démarrer l’app.
+    Permet de centraliser plus proprement le lancement.
+    """
+    from interface import MainWindow  # import ici pour éviter les import circulaires
+
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.showMaximized()
+    return app.exec()
