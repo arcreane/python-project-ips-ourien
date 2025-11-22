@@ -1,4 +1,4 @@
-import sys
+"""import sys
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton
 from app import *
@@ -35,3 +35,75 @@ window = MainWindow()
 window.show()
 
 app.exec()
+"""
+
+import sys
+from PySide6.QtWidgets import (
+    QApplication, QMainWindow, QLabel,
+    QHBoxLayout, QVBoxLayout, QWidget, QListWidget
+)
+from PySide6.QtCore import Qt, QTimer
+
+from utils import Simulation
+
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Espace Aérien - Simulation Radar")
+        self.setStyleSheet("background-color: black; color: white;")
+
+        self.sim = Simulation()
+        self.sim.charger_avions_test()
+
+        # --- Layout global en 3 parties ---
+        layout = QHBoxLayout()
+
+        # gauche
+        self.left_panel = QListWidget()
+        self.left_panel.setStyleSheet("background: #222; color: white;")
+        layout.addWidget(self.left_panel, 1)
+
+        # centre (map)
+        self.map_label = QLabel("MAP ICI")
+        self.map_label.setAlignment(Qt.AlignCenter)
+        self.map_label.setStyleSheet("background: #333; color: white;")
+        layout.addWidget(self.map_label, 3)
+
+        # droite
+        self.right_panel = QListWidget()
+        self.right_panel.setStyleSheet("background: #222; color: white;")
+        layout.addWidget(self.right_panel, 1)
+
+        container = QWidget()
+        container.setLayout(layout)
+        self.setCentralWidget(container)
+
+        # Timer de simulation
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_ui)
+        self.timer.start(1000)  # 1 seconde
+
+    def update_ui(self):
+        collisions = self.sim.tick()
+
+        # Mise à jour de la liste des avions
+        self.left_panel.clear()
+        for a in self.sim.espace.avions:
+            self.left_panel.addItem(
+                f"{a.identifiant} → pos=({a.xa:.2f}, {a.ya:.2f}) alt={a.altitude}"
+            )
+
+        # Mise à jour des collisions
+        self.right_panel.clear()
+        if collisions:
+            for a1, a2, d_h, d_v in collisions:
+                self.right_panel.addItem(
+                    f"⚠ {a1.identifiant} / {a2.identifiant} → {d_h:.2f} km, {d_v} ft"
+                )
+        else:
+            self.right_panel.addItem("Aucune collision !")
+
+    if __name__ == "__main__":
+        from utils import lancer_application
+        lancer_application()
