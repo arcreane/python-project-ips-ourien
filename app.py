@@ -1,11 +1,12 @@
 import math
 class Avion:
     ALTITUDE_MAX = 36000
-    def __init__(self,identifiant,vitesse,cap,altitude,xa,ya):
+    def __init__(self,identifiant,vitesse,cap,altitude_ft,carburant,xa,ya):
         self.identifiant = identifiant
         self.vitesse = vitesse
         self.cap = cap
-        self.altitude = altitude
+        self.altitude_ft = altitude_ft
+        self.carburant = carburant
         self.xa = xa
         self.ya = ya
 
