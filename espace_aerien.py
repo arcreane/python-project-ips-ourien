@@ -8,7 +8,7 @@ class EspaceAerien:
     def ajouter_avion(self, avion: Avion):
         self.avions.append(avion)
 
-    def mettre_a_jour(self, dt):
+    def maj(self, dt):
         """Met à jour les positions de tous les avions"""
         for avion in self.avions:
             avion.move(dt)
