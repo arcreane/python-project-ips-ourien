@@ -31,7 +31,7 @@ class Jeu:
         print(f"✈️ Avion généré : {self.identifiant}")
 
     def mise_a_jour(self, dt):
-        self.espace.mettre_a_jour(dt)
+        self.espace.maj(dt)
 
         collisions = self.espace.detect_collisions()
         if collisions:
@@ -44,4 +44,4 @@ class Jeu:
             self.temps_ecoule = 0
 
         # Mise à jour du mouvement des avions
-        self.espace.mettre_a_jour(dt)
+        self.espace.maj(dt)
