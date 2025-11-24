@@ -16,15 +16,15 @@ class Jeu:
         # Coordonnées initiales aléatoires
         self.xa = random.randint(0, 11000)
         self.ya = random.randint(0, 11000)
-        self.altitude_ft = random.randint(1500, 36000)
+        self.altitude = random.randint(1500, 36000)
         self.vitesse = random.randint(350, 900)
         self.cap = random.randint(0, 359)
         self.carburant = random.randint(10,100)
 
 
-        self.identifiant = f"FL{self.altitude_ft//100}"
+        self.identifiant = f"FL{self.altitude//100}"
 
-        avion = Avion(self.identifiant,self.vitesse,self.cap,self.altitude_ft,self.carburant,self.xa,self.ya)
+        avion = Avion(self.identifiant,self.vitesse,self.cap,self.altitude,self.xa,self.ya)
 
         self.espace.ajouter_avion(avion)
 
