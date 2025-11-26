@@ -1,3 +1,4 @@
+"""
 import math
 class Avion:
     ALTITUDE_MAX = 36000
@@ -10,7 +11,7 @@ class Avion:
         self.ya = ya
 
     def move(self, dt):
-        """Met à jour la position selon le cap et la vitesse"""
+        "Met à jour la position selon le cap et la vitesse"
         v = self.vitesse / 3600.0  # km/s
         rad = math.radians(self.cap)
         self.xa += v * dt * math.cos(rad)
@@ -32,4 +33,41 @@ class Avion:
 
     def affiche(self):
         print(self.identifiant,self.vitesse,self.cap,self.altitude)
+"""
+import math
+
+class Avion:
+    ALTITUDE_MAX = 36000  # ft
+
+    def __init__(self, identifiant, vitesse, cap, altitude, xa, ya):
+        self.identifiant = identifiant
+        self.vitesse = vitesse  # km/h
+        self.cap = cap          # degrés
+        self.altitude = altitude
+        self.xa = xa
+        self.ya = ya
+
+    def move(self, dt):
+        """Met à jour la position selon le cap et la vitesse (dt en secondes)."""
+        v = self.vitesse / 3600.0  # km/s
+        rad = math.radians(self.cap)
+        self.xa += v * dt * math.cos(rad)
+        self.ya += v * dt * math.sin(rad)
+
+    def changement_vitesse(self, delta_v):
+        self.vitesse += delta_v
+
+    def changement_cap(self, delta_cap):
+        self.cap = (self.cap + delta_cap) % 360
+
+    def changement_altitude(self, delta_altitude):
+        self.altitude += delta_altitude
+        if self.altitude > self.ALTITUDE_MAX:
+            self.altitude = self.ALTITUDE_MAX
+        elif self.altitude < 0:
+            self.altitude = 0
+        print(f"{self.identifiant} → altitude : {self.altitude} ft")
+
+    def affiche(self):
+        print(self.identifiant, self.vitesse, self.cap, self.altitude, f"({self.xa:.2f}, {self.ya:.2f})")
 
