@@ -447,15 +447,42 @@ class RadarWidget(QWidget):
     def __init__(self, parent_window=None):
         super().__init__()
         self.setMinimumSize(500, 500)
+
         self.avions = []
         self.selected_identifiant = None
         self.parent_window = parent_window
 
+        # --- Images depuis URLs ---
         self.bg = self.load_pixmap_from_url(RADAR_IMAGE_URL)
         self.plane_icon = self.load_pixmap_from_url(PLANE_IMAGE_URL)
         self.plane_icon_red = self.load_pixmap_from_url(PLANE_RED_IMAGE_URL)
         self.tower_icon = self.load_pixmap_from_url(TOWER_IMAGE_URL)
 
+        # --- Animation radar (balayage + traînée) ---
+        self.angle = 0               # angle courant de l'aiguille
+        self.traces = []             # anciens angles pour la traînée
+        self.max_traces = 70         # plus c'est grand, plus la traînée est dense
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._update_angle)
+        self.timer.start(25)         # fréquence d’animation (ms)
+
+    # ----------------------------------------
+    #   Radar sweeping effect
+    # ----------------------------------------
+    def _update_angle(self):
+        # rotation plus douce pour un effet serré
+        self.angle = (self.angle + 2) % 360
+
+        self.traces.append(self.angle)
+        if len(self.traces) > self.max_traces:
+            self.traces.pop(0)
+
+        self.update()
+
+    # ----------------------------------------
+    #   Utils
+    # ----------------------------------------
     def load_pixmap_from_url(self, url):
         try:
             img_data = requests.get(url).content
@@ -471,9 +498,13 @@ class RadarWidget(QWidget):
         self.selected_identifiant = selected_identifiant
         self.update()
 
+    # ----------------------------------------
+    #   Dessin
+    # ----------------------------------------
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHints(QPainter.Antialiasing)
+
         rect = self.rect()
         center = rect.center()
 
@@ -483,29 +514,51 @@ class RadarWidget(QWidget):
         else:
             painter.fillRect(rect, Qt.black)
 
-        # Cercle radar
+        radius = min(rect.width(), rect.height()) // 2 - 20
+
+        # --- Aiguille radar avec TRAÎNÉE type "ombre" ---
+        if self.traces:
+            for i, ang in enumerate(self.traces):
+                # t : 0 (ancien) → 1 (récent)
+                t = (i + 1) / len(self.traces)
+                # t² : chute rapide de l'opacité = ombre qui se disperse
+                alpha = int(255 * (t ** 2))
+                width = 1 + int(3 * t)  # plus épais près de la pointe
+
+                pen_beam = QPen(QColor(0, 255, 180, alpha))
+                pen_beam.setWidth(width)
+                painter.setPen(pen_beam)
+
+                rad = math.radians(ang)
+                x = center.x() + radius * math.cos(rad)
+                y = center.y() - radius * math.sin(rad)  # y inversé
+
+                painter.drawLine(center.x(), center.y(), x, y)
+
+        # --- Cercle radar ---
         pen = QPen(QColor("#1EC8FF"))
         pen.setWidth(3)
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
-        radius = min(rect.width(), rect.height()) // 2 - 20
         painter.drawEllipse(center, radius, radius)
 
-        # Tour de contrôle au centre
+        # --- Tour de contrôle au centre ---
         if not self.tower_icon.isNull():
             tw, th = self.tower_icon.width(), self.tower_icon.height()
-            painter.drawPixmap(center.x() - tw//2, center.y() - th//2, self.tower_icon)
+            painter.drawPixmap(center.x() - tw // 2, center.y() - th // 2, self.tower_icon)
 
-        # Avions
+        # --- Avions ---
         for a in self.avions:
             px = center.x() + int(a.xa * 12)
             py = center.y() + int(a.ya * 12)
+
             icon = self.plane_icon_red if self.selected_identifiant == a.identifiant else self.plane_icon
+
             if not icon.isNull():
-                w, h = icon.width(), icon.height()
                 transform = QTransform().rotate(-a.cap)
                 rotated = icon.transformed(transform, Qt.SmoothTransformation)
-                painter.drawPixmap(px - w//2, py - h//2, rotated)
+                w, h = rotated.width(), rotated.height()
+                painter.drawPixmap(px - w // 2, py - h // 2, rotated)
             else:
                 color = QColor("#FF0000") if self.selected_identifiant == a.identifiant else QColor("#FFB43B")
                 painter.setBrush(color)
@@ -516,19 +569,30 @@ class RadarWidget(QWidget):
             painter.setPen(QColor("#FFFFFF"))
             painter.drawText(px - 10, py - 10, a.identifiant)
 
+    # ----------------------------------------
+    #   Sélection avion à la souris
+    # ----------------------------------------
     def mousePressEvent(self, event):
         if not self.avions:
             return
+
         center = self.rect().center()
         ex, ey = event.position().x(), event.position().y()
+
         for a in self.avions:
             px = center.x() + int(a.xa * 12)
             py = center.y() + int(a.ya * 12)
-            r = max(self.plane_icon.width(), self.plane_icon.height())//2 if not self.plane_icon.isNull() else 6
-            if (px - ex)**2 + (py - ey)**2 <= r**2:
+
+            if not self.plane_icon.isNull():
+                r = max(self.plane_icon.width(), self.plane_icon.height()) // 2
+            else:
+                r = 6
+
+            if (px - ex) ** 2 + (py - ey) ** 2 <= r ** 2:
                 if self.parent_window:
                     self.parent_window.select_plane_by_id(a.identifiant)
                 break
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
