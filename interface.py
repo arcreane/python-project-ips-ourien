@@ -716,27 +716,31 @@ class MainWindow(QMainWindow):
         current_id = self.get_selected_identifiant()
         self.liste_avions.clear()
         for a in self.sim.espace.avions:
+            # On ne montre QUE les avions générés automatiquement
+            if not getattr(a, "genere", False):
+                continue
+
             self.liste_avions.addItem(
                 f"{a.identifiant} — Alt: {a.altitude} ft — V: {a.vitesse} km/h — Cap: {a.cap}°"
             )
-        if current_id:
-            self.select_plane_by_id(current_id)
-        else:
-            self.radar.update_positions(self.sim.espace.avions)
 
     def spawn_plane(self):
         letters = ''.join(random.choices(string.ascii_uppercase, k=2))
         digits = ''.join(random.choices(string.digits, k=3))
         ident = letters + digits
-
-        angle = random.uniform(0,360)
+        angle = random.uniform(0, 360)
         distance = 8
         xa = distance * math.cos(math.radians(angle))
         ya = distance * math.sin(math.radians(angle))
-        vitesse = random.randint(300,750)
-        cap = random.randint(0,360)
-        altitude = random.randint(2000,9000)
-        a = Avion(ident,vitesse,cap,altitude,xa,ya)
+        vitesse = random.randint(300, 750)
+        cap = random.randint(0, 360)
+        altitude = random.randint(2000, 9000)
+
+        a = Avion(ident, vitesse, cap, altitude, xa, ya)
+
+        # 👉 marquer cet avion comme "généré"
+        a.genere = True
+
         self.sim.espace.avions.append(a)
         self.update_ui()
 
