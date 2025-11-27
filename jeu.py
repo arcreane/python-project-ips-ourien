@@ -36,6 +36,12 @@ class Jeu:
         collisions = self.espace.detect_collisions()
         if collisions:
             print("Collision détectée")
+            for a1, a2, dh, dv in collisions:
+                # Supprime les avions impliqués dans la collision
+                self.espace.supprimer_avion(a1)
+                self.espace.supprimer_avion(a2)
+                # Score -100 par avion crashé
+                self.score -= 100
 
         self.temps_ecoule += dt
         # Générer de nouveaux avions régulièrement

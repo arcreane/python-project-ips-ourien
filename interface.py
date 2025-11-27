@@ -622,8 +622,10 @@ class MainWindow(QMainWindow):
         stats_layout = QVBoxLayout()
         self.label_avions = QLabel("Avions: 0")
         self.label_niveau = QLabel("Niveau: 1")
+        self.label_score = QLabel("Score: 0")
         stats_layout.addWidget(self.label_avions)
         stats_layout.addWidget(self.label_niveau)
+        stats_layout.addWidget(self.label_score)
         stats_box.setLayout(stats_layout)
         self.liste_avions = QListWidget()
         self.liste_avions.itemClicked.connect(self.select_plane)
@@ -710,6 +712,7 @@ class MainWindow(QMainWindow):
         self.sim.tick()
         self.label_avions.setText(f"Avions: {len(self.sim.espace.avions)}")
         self.label_niveau.setText(f"Niveau: {getattr(self.sim, 'niveau',1)}")
+        self.label_score.setText(f"Score: {self.sim.jeu.score}")
         current_id = self.get_selected_identifiant()
         self.liste_avions.clear()
         for a in self.sim.espace.avions:
