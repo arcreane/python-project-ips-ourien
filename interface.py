@@ -444,46 +444,20 @@ PLANE_IMAGE_URL = "https://i.imgur.com/9zQ5rSL.png"
 PLANE_RED_IMAGE_URL = "https://i.imgur.com/Rt3R0Dw.png"
 TOWER_IMAGE_URL = "https://i.imgur.com/kbYhXxW.png"  # Tour de contrôle
 
+
 class RadarWidget(QWidget):
     def __init__(self, parent_window=None):
         super().__init__()
         self.setMinimumSize(500, 500)
-
         self.avions = []
         self.selected_identifiant = None
         self.parent_window = parent_window
 
-        # --- Images depuis URLs ---
         self.bg = self.load_pixmap_from_url(RADAR_IMAGE_URL)
         self.plane_icon = self.load_pixmap_from_url(PLANE_IMAGE_URL)
         self.plane_icon_red = self.load_pixmap_from_url(PLANE_RED_IMAGE_URL)
         self.tower_icon = self.load_pixmap_from_url(TOWER_IMAGE_URL)
 
-        # --- Animation radar (balayage + traînée) ---
-        self.angle = 0               # angle courant de l'aiguille
-        self.traces = []             # anciens angles pour la traînée
-        self.max_traces = 70         # plus c'est grand, plus la traînée est dense
-
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self._update_angle)
-        self.timer.start(25)         # fréquence d’animation (ms)
-
-    # ----------------------------------------
-    #   Radar sweeping effect
-    # ----------------------------------------
-    def _update_angle(self):
-        # rotation plus douce pour un effet serré
-        self.angle = (self.angle + 2) % 360
-
-        self.traces.append(self.angle)
-        if len(self.traces) > self.max_traces:
-            self.traces.pop(0)
-
-        self.update()
-
-    # ----------------------------------------
-    #   Utils
-    # ----------------------------------------
     def load_pixmap_from_url(self, url):
         try:
             img_data = requests.get(url).content
@@ -499,13 +473,9 @@ class RadarWidget(QWidget):
         self.selected_identifiant = selected_identifiant
         self.update()
 
-    # ----------------------------------------
-    #   Dessin
-    # ----------------------------------------
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHints(QPainter.Antialiasing)
-
         rect = self.rect()
         center = rect.center()
 
@@ -515,50 +485,28 @@ class RadarWidget(QWidget):
         else:
             painter.fillRect(rect, Qt.black)
 
-        radius = min(rect.width(), rect.height()) // 2 - 20
-
-        # --- Aiguille radar avec TRAÎNÉE type "ombre" ---
-        if self.traces:
-            for i, ang in enumerate(self.traces):
-                # t : 0 (ancien) → 1 (récent)
-                t = (i + 1) / len(self.traces)
-                # t² : chute rapide de l'opacité = ombre qui se disperse
-                alpha = int(255 * (t ** 2))
-                width = 1 + int(3 * t)  # plus épais près de la pointe
-
-                pen_beam = QPen(QColor(0, 255, 180, alpha))
-                pen_beam.setWidth(width)
-                painter.setPen(pen_beam)
-
-                rad = math.radians(ang)
-                x = center.x() + radius * math.cos(rad)
-                y = center.y() - radius * math.sin(rad)  # y inversé
-
-                painter.drawLine(center.x(), center.y(), x, y)
-
-        # --- Cercle radar ---
+        # Cercle radar
         pen = QPen(QColor("#1EC8FF"))
         pen.setWidth(3)
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
+        radius = min(rect.width(), rect.height()) // 2 - 20
         painter.drawEllipse(center, radius, radius)
 
-        # --- Tour de contrôle au centre ---
+        # Tour de contrôle au centre
         if not self.tower_icon.isNull():
             tw, th = self.tower_icon.width(), self.tower_icon.height()
             painter.drawPixmap(center.x() - tw // 2, center.y() - th // 2, self.tower_icon)
 
-        # --- Avions ---
+        # Avions
         for a in self.avions:
             px = center.x() + int(a.xa * 12)
             py = center.y() + int(a.ya * 12)
-
             icon = self.plane_icon_red if self.selected_identifiant == a.identifiant else self.plane_icon
-
             if not icon.isNull():
+                w, h = icon.width(), icon.height()
                 transform = QTransform().rotate(-a.cap)
                 rotated = icon.transformed(transform, Qt.SmoothTransformation)
-                w, h = rotated.width(), rotated.height()
                 painter.drawPixmap(px - w // 2, py - h // 2, rotated)
             else:
                 color = QColor("#FF0000") if self.selected_identifiant == a.identifiant else QColor("#FFB43B")
@@ -566,29 +514,18 @@ class RadarWidget(QWidget):
                 painter.setPen(Qt.NoPen)
                 painter.drawEllipse(px - 6, py - 6, 12, 12)
 
-            # Affiche l'identifiant au-dessus de l'avion
             painter.setPen(QColor("#FFFFFF"))
             painter.drawText(px - 10, py - 10, a.identifiant)
 
-    # ----------------------------------------
-    #   Sélection avion à la souris
-    # ----------------------------------------
     def mousePressEvent(self, event):
         if not self.avions:
             return
-
         center = self.rect().center()
         ex, ey = event.position().x(), event.position().y()
-
         for a in self.avions:
             px = center.x() + int(a.xa * 12)
             py = center.y() + int(a.ya * 12)
-
-            if not self.plane_icon.isNull():
-                r = max(self.plane_icon.width(), self.plane_icon.height()) // 2
-            else:
-                r = 6
-
+            r = max(self.plane_icon.width(), self.plane_icon.height()) // 2 if not self.plane_icon.isNull() else 6
             if (px - ex) ** 2 + (py - ey) ** 2 <= r ** 2:
                 if self.parent_window:
                     self.parent_window.select_plane_by_id(a.identifiant)
@@ -601,6 +538,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("ATC Simulator")
         self.sim = Simulation()
         self.sim.charger_avions_test()
+        self.selected_identifiant = None
+        self.crash_count = 0
+        self.total_generated = 0
         self.init_ui()
         self.start_timers()
 
@@ -617,36 +557,35 @@ class MainWindow(QMainWindow):
         """)
 
         layout = QHBoxLayout()
-        # Colonne gauche
         left = QVBoxLayout()
+
+        # Stats
         stats_box = QGroupBox("STATS")
         stats_layout = QVBoxLayout()
-        self.label_avions = QLabel("Avions: 0")
-        self.label_niveau = QLabel("Niveau: 1")
-        self.label_score = QLabel("Score: 0")
+        self.label_avions = QLabel(f"Avions générés: {self.total_generated}")
+        self.label_crash = QLabel(f"Crashs: {self.crash_count}")
         stats_layout.addWidget(self.label_avions)
-        stats_layout.addWidget(self.label_niveau)
-        stats_layout.addWidget(self.label_score)
+        stats_layout.addWidget(self.label_crash)
         stats_box.setLayout(stats_layout)
+        left.addWidget(stats_box)
+
+        # Liste des avions (identifiants uniquement)
         self.liste_avions = QListWidget()
         self.liste_avions.itemClicked.connect(self.select_plane)
-        left.addWidget(stats_box)
         left.addWidget(QLabel("AVIONS"))
         left.addWidget(self.liste_avions)
 
-        # Centre radar
+        # Radar
         self.radar = RadarWidget(parent_window=self)
 
-        # Colonne droite
+        # Colonne droite: contrôles
         right = QVBoxLayout()
         controls = QGroupBox("CONTROLES")
         c_layout = QVBoxLayout()
         self.label_selected = QLabel("Sélectionné : Aucun")
 
-        # Boutons altitude
         btn_up = QPushButton("⬆ Monter")
         btn_dn = QPushButton("⬇ Descendre")
-        # Boutons vitesse
         btn_speed_up = QPushButton("⬆ Accélérer")
         btn_speed_down = QPushButton("⬇ Ralentir")
 
@@ -661,7 +600,6 @@ class MainWindow(QMainWindow):
         c_layout.addWidget(btn_speed_up)
         c_layout.addWidget(btn_speed_down)
 
-        # Slider cap
         self.label_slider_cap = QLabel("Cap: 0°")
         c_layout.addWidget(self.label_slider_cap)
 
@@ -700,35 +638,18 @@ class MainWindow(QMainWindow):
 
     def start_timers(self):
         self.timer = QTimer()
-        self.timer.timeout.connect(self.update_ui)
+        self.timer.timeout.connect(self.move_planes)
         self.timer.start(800)
         self.spawn_timer = QTimer()
         self.spawn_timer.timeout.connect(self.spawn_plane)
-        self.spawn_timer.start(10000)
-        self.move_timer = QTimer()
-        self.move_timer.timeout.connect(self.move_planes)
-        self.move_timer.start(800)
+        self.spawn_timer.start(5000)
 
-    def update_ui(self):
-        self.sim.tick()
-        self.label_avions.setText(f"Avions: {len(self.sim.espace.avions)}")
-        self.label_niveau.setText(f"Niveau: {getattr(self.sim, 'niveau',1)}")
-        self.label_score.setText(f"Score: {self.sim.jeu.score}")
-        current_id = self.get_selected_identifiant()
-        self.liste_avions.clear()
-        for a in self.sim.espace.avions:
-            # On ne montre QUE les avions générés automatiquement
-            if not getattr(a, "genere", False):
-                continue
-
-            self.liste_avions.addItem(
-                f"{a.identifiant} — Alt: {a.altitude} ft — V: {a.vitesse} km/h — Cap: {a.cap}°"
-            )
-
+    # Génération des avions
     def spawn_plane(self):
         letters = ''.join(random.choices(string.ascii_uppercase, k=2))
         digits = ''.join(random.choices(string.digits, k=3))
         ident = letters + digits
+
         angle = random.uniform(0, 360)
         distance = 8
         xa = distance * math.cos(math.radians(angle))
@@ -736,100 +657,138 @@ class MainWindow(QMainWindow):
         vitesse = random.randint(300, 750)
         cap = random.randint(0, 360)
         altitude = random.randint(2000, 9000)
-
         a = Avion(ident, vitesse, cap, altitude, xa, ya)
-
-        # 👉 marquer cet avion comme "généré"
-        a.genere = True
-
         self.sim.espace.avions.append(a)
-        self.update_ui()
+        self.total_generated += 1
+        self.label_avions.setText(f"Avions générés: {self.total_generated}")
+        self.liste_avions.addItem(ident)
+        self.radar.update_positions(self.sim.espace.avions, self.selected_identifiant)
 
+    # Déplacement des avions + vérification crash
     def move_planes(self):
         dt = 0.8
-        for a in self.sim.espace.avions:
+        for a in self.sim.espace.avions[:]:
             a.move(dt)
-        self.update_ui()
+            if a.vitesse < 200 or a.altitude <= 0:
+                self.sim.espace.avions.remove(a)
+                self.crash_count += 1
+                self.label_crash.setText(f"Crashs: {self.crash_count}")
+                if self.selected_identifiant == a.identifiant:
+                    self.selected_identifiant = None
+        self.radar.update_positions(self.sim.espace.avions, self.selected_identifiant)
+        self.update_selected_info()
 
     def select_plane(self, item):
-        identifiant = item.text().split(" — ")[0]
-        self.select_plane_by_id(identifiant)
+        self.selected_identifiant = item.text()
+        self.slider_cap.setValue(0)
+        self.update_selected_info()
+        self.radar.update_positions(self.sim.espace.avions, self.selected_identifiant)
 
-    def select_plane_by_id(self, identifiant):
-        for idx, a in enumerate(self.sim.espace.avions):
-            if a.identifiant == identifiant:
-                self.liste_avions.setCurrentRow(idx)
-                self.slider_cap.setValue(a.cap)
-                self.label_slider_cap.setText(f"Cap: {a.cap}°")
-                break
-        self.radar.update_positions(self.sim.espace.avions, selected_identifiant=identifiant)
-        for a in self.sim.espace.avions:
-            if a.identifiant == identifiant:
-                self.label_selected.setText(
-                    f"Avion: {a.identifiant}\nAltitude: {a.altitude} ft\nVitesse: {a.vitesse} km/h\nCap: {a.cap}°\nPosition: ({a.xa:.2f}, {a.ya:.2f})"
-                )
-                break
+    def select_plane_by_id(self, ident):
+        self.selected_identifiant = ident
+        self.update_selected_info()
+        self.radar.update_positions(self.sim.espace.avions, self.selected_identifiant)
 
     def get_selected_identifiant(self):
-        item = self.liste_avions.currentItem()
-        if not item:
-            return None
-        return item.text().split(" — ")[0]
+        return self.selected_identifiant
 
-    # Monter / Descendre
-    def monter_avion(self):
-        identifiant = self.get_selected_identifiant()
-        if identifiant:
+    def update_selected_info(self):
+        ident = self.selected_identifiant
+        if ident:
             for a in self.sim.espace.avions:
-                if a.identifiant == identifiant:
-                    a.changement_altitude(1000)
+                if a.identifiant == ident:
+                    self.label_selected.setText(
+                        f"Avion: {a.identifiant}\n"
+                        f"Altitude: {a.altitude} ft\n"
+                        f"Vitesse: {a.vitesse} km/h\n"
+                        f"Cap: {a.cap}°\n"
+                        f"Position: ({a.xa:.2f}, {a.ya:.2f})"
+                    )
                     break
-        self.update_ui()
+        else:
+            self.label_selected.setText("Sélectionné : Aucun")
+
+    # Contrôles
+    def monter_avion(self):
+        ident = self.get_selected_identifiant()
+        if ident:
+            for a in self.sim.espace.avions:
+                if a.identifiant == ident:
+                    a.changement_altitude(1000)
+                    if a.altitude <= 0:
+                        self.sim.espace.avions.remove(a)
+                        self.crash_count += 1
+                        self.label_crash.setText(f"Crashs: {self.crash_count}")
+                        self.selected_identifiant = None
+                    break
+        self.update_selected_info()
+        self.radar.update_positions(self.sim.espace.avions, self.selected_identifiant)
 
     def descendre_avion(self):
-        identifiant = self.get_selected_identifiant()
-        if identifiant:
+        ident = self.get_selected_identifiant()
+        if ident:
             for a in self.sim.espace.avions:
-                if a.identifiant == identifiant:
+                if a.identifiant == ident:
                     a.changement_altitude(-1000)
+                    if a.altitude <= 0:
+                        self.sim.espace.avions.remove(a)
+                        self.crash_count += 1
+                        self.label_crash.setText(f"Crashs: {self.crash_count}")
+                        self.selected_identifiant = None
                     break
-        self.update_ui()
+        self.update_selected_info()
+        self.radar.update_positions(self.sim.espace.avions, self.selected_identifiant)
 
-    # Accélérer / Ralentir
     def accelerer_avion(self):
-        identifiant = self.get_selected_identifiant()
-        if identifiant:
+        ident = self.get_selected_identifiant()
+        if ident:
             for a in self.sim.espace.avions:
-                if a.identifiant == identifiant:
+                if a.identifiant == ident:
                     a.changement_vitesse(50)
                     break
-        self.update_ui()
+        self.update_selected_info()
+        self.radar.update_positions(self.sim.espace.avions, self.selected_identifiant)
 
     def ralentir_avion(self):
-        identifiant = self.get_selected_identifiant()
-        if identifiant:
+        ident = self.get_selected_identifiant()
+        if ident:
             for a in self.sim.espace.avions:
-                if a.identifiant == identifiant:
+                if a.identifiant == ident:
                     a.changement_vitesse(-50)
+                    if a.vitesse < 200:
+                        self.sim.espace.avions.remove(a)
+                        self.crash_count += 1
+                        self.label_crash.setText(f"Crashs: {self.crash_count}")
+                        self.selected_identifiant = None
                     break
-        self.update_ui()
+        self.update_selected_info()
+        self.radar.update_positions(self.sim.espace.avions, self.selected_identifiant)
 
-    # Slider cap
     def slider_cap_changed(self, value):
         self.label_slider_cap.setText(f"Cap: {value}°")
-        identifiant = self.get_selected_identifiant()
-        if identifiant:
+        ident = self.get_selected_identifiant()
+        if ident:
             for a in self.sim.espace.avions:
-                if a.identifiant == identifiant:
+                if a.identifiant == ident:
                     a.cap = value
                     break
-        self.update_ui()
+        self.update_selected_info()
+        self.radar.update_positions(self.sim.espace.avions, self.selected_identifiant)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = MainWindow()
     w.showMaximized()
     sys.exit(app.exec())
+
+
+
+
+
+
+
+
 
 
 
