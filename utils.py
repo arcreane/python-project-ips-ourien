@@ -20,7 +20,6 @@ class Simulation:
         self.jeu.avions = self.espace.avions
 
     def charger_avions_test(self):
-        """Charge 5 avions de tests comme dans tes anciens scripts"""
         # Générer quelques avions aléatoires via l'instance Jeu
         for _ in range(5):
                 self.jeu.generer_avion()
