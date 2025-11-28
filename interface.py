@@ -421,6 +421,7 @@ if __name__ == "__main__":
     w = MainWindow()
     w.showMaximized()
     sys.exit(app.exec())
+
 """
 import sys
 import random
@@ -758,6 +759,8 @@ if __name__ == "__main__":
     w = MainWindow()
     w.showMaximized()
     sys.exit(app.exec())
+
+
 
 
 
