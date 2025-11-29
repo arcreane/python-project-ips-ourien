@@ -237,17 +237,41 @@ class MainWindow(QMainWindow):
         self.liste_avions.addItem(ident)
         self.radar.update_positions(self.sim.espace.avions, self.selected_identifiant)
 
-    # --- Déplacement ---
     def move_planes(self):
         dt = 5
         now = time.time()
-        radar_radius_km = 20
+
+        # Récupère la taille du widget radar de façon sûre
+        w = self.radar.width()
+        h = self.radar.height()
+
+        # Si le widget n'a pas encore de taille (0), on utilise une valeur par défaut
+        if w <= 0 or h <= 0:
+            # fallback : correspond approximativement à ton minimumSize (500x500)
+            w, h = 500, 500
+
+        # rayon en pixels du cercle bleu dessiné dans paintEvent()
+        radius_pixels = min(w, h) // 2 - 20
+        if radius_pixels <= 0:
+            radius_pixels = min(w, h) // 2  # sécurité
+
+        # conversion pixel -> km (ton échelle : 12 pixels = 1 km)
+        radar_radius_km = radius_pixels / 12.0
+
+        # petite marge pour que l'avion disparaisse juste après le cercle
+        radar_margin_km = 0.5
+        radar_limit_km = radar_radius_km + radar_margin_km
+
+        # --- boucle principale ---
         for a in self.sim.espace.avions[:]:
             a.move(dt)
 
-            # Urgence
+            # Urgence non gérée -> crash
             if a.urgence and (now - a.spawn_time) > 10:
-                self.sim.espace.avions.remove(a)
+                try:
+                    self.sim.espace.avions.remove(a)
+                except ValueError:
+                    pass
                 self.crash_count += 1
                 self.score -= 50
                 self.label_crash.setText(f"Crashs: {self.crash_count}")
@@ -256,14 +280,21 @@ class MainWindow(QMainWindow):
                     self.selected_identifiant = None
                 continue
 
+            # distance en km par rapport au centre
             distance = math.hypot(a.xa, a.ya)
-            if distance > radar_radius_km or a.vitesse < 200 or a.altitude <= 0:
-                self.sim.espace.avions.remove(a)
+
+            # sortie du radar (avec marge) / vitesse ou altitude problématique
+            if distance > radar_limit_km or a.vitesse < 200 or a.altitude <= 0:
+                try:
+                    self.sim.espace.avions.remove(a)
+                except ValueError:
+                    pass
                 self.score -= 20
                 self.label_score.setText(f"Score: {self.score}")
                 if self.selected_identifiant == a.identifiant:
                     self.selected_identifiant = None
 
+        # mise à jour visuelle
         self.radar.update_positions(self.sim.espace.avions, self.selected_identifiant)
         self.update_selected_info()
 
