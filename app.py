@@ -7,15 +7,30 @@ import time
 class Avion:
     ALTITUDE_MAX = 36000  # ft
 
-    def __init__(self, identifiant, vitesse, cap, altitude, xa, ya, urgence=False):
-        self.identifiant = identifiant
-        self.vitesse = vitesse      # km/h
-        self.cap = cap              # degrés
-        self.altitude = altitude    # ft
-        self.xa = xa                # km (position relative au centre)
-        self.ya = ya                # km
-        self.urgence = urgence      # booléen
-        self.spawn_time = time.time()
+    class Avion:
+        def __init__(self, identifiant, vitesse, cap, altitude, xa, ya, urgence=False):
+            self.identifiant = identifiant
+            self.vitesse = vitesse  # en km/h
+            self.cap = cap  # en degrés
+            self.altitude = altitude  # en ft
+            self.xa = xa  # position x (km)
+            self.ya = ya  # position y (km)
+            self.urgence = urgence
+
+            self.spawn_time = time.time()
+
+            # --- nouveaux attributs pour l’atterrissage ---
+            self.en_approche = False
+            self.termine_atterrissage = False
+            self.cible_x = None
+            self.cible_y = None
+
+    def demarrer_atterrissage(self, cible_x, cible_y):
+        """Passe l’avion en mode atterrissage vers une extrémité de piste."""
+        self.en_approche = True
+        self.termine_atterrissage = False
+        self.cible_x = cible_x
+        self.cible_y = cible_y
 
     def move(self, dt):
         """Met à jour la position selon le cap et la vitesse (dt en secondes)."""
