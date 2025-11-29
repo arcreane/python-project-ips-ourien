@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPixmap, QPainter, QPen, QTransform, QColor
 
-from app import Avion
+from app import Avion  # Assurez-vous que Avion est bien défini
 
 # Images depuis Internet
 RADAR_IMAGE_URL = "https://i.imgur.com/7z4JZxR.png"
@@ -19,6 +19,7 @@ PLANE_IMAGE_URL = "https://i.imgur.com/9zQ5rSL.png"
 PLANE_RED_IMAGE_URL = "https://i.imgur.com/Rt3R0Dw.png"
 TOWER_IMAGE_URL = "https://i.imgur.com/kbYhXxW.png"
 
+# --- Modèles ---
 class Espace:
     def __init__(self):
         self.avions = []
@@ -27,7 +28,7 @@ class Simulation:
     def __init__(self):
         self.espace = Espace()
     def charger_avions_test(self):
-        pass
+        pass  # à compléter si besoin
 
 # --- Radar Widget ---
 class RadarWidget(QWidget):
@@ -117,6 +118,14 @@ class RadarWidget(QWidget):
                 if self.parent_window:
                     self.parent_window.select_plane_by_id(a.identifiant)
                 break
+
+    # --- Pixel-perfect check ---
+    def is_outside(self, a):
+        center = self.rect().center()
+        px = center.x() + int(a.xa * 12)
+        py = center.y() + int(a.ya * 12)
+        radius = min(self.width(), self.height()) // 2 - 20
+        return (px - center.x())**2 + (py - center.y())**2 > radius**2
 
 # --- Main Window ---
 class MainWindow(QMainWindow):
@@ -215,7 +224,7 @@ class MainWindow(QMainWindow):
         self.spawn_timer.timeout.connect(self.spawn_plane)
         self.spawn_timer.start(5000)
 
-    # --- Génération ---
+    # --- Génération d'avions ---
     def spawn_plane(self):
         letters = ''.join(random.choices(string.ascii_uppercase, k=2))
         digits = ''.join(random.choices(string.digits, k=3))
@@ -229,7 +238,7 @@ class MainWindow(QMainWindow):
         cap = random.randint(0, 360)
         altitude = random.randint(2000, 9000)
 
-        urgence = random.random() < 0.1
+        urgence = random.random() < 0.3
         a = Avion(ident, vitesse, cap, altitude, xa, ya, urgence)
         self.sim.espace.avions.append(a)
         self.total_generated += 1
@@ -237,15 +246,16 @@ class MainWindow(QMainWindow):
         self.liste_avions.addItem(ident)
         self.radar.update_positions(self.sim.espace.avions, self.selected_identifiant)
 
-    # --- Déplacement ---
+    # --- Déplacement et gestion ---
     def move_planes(self):
         dt = 5
         now = time.time()
-        radar_radius_km = 20
+
         for a in self.sim.espace.avions[:]:
+            # Déplacement
             a.move(dt)
 
-            # Urgence
+            # Urgences
             if a.urgence and (now - a.spawn_time) > 10:
                 self.sim.espace.avions.remove(a)
                 self.crash_count += 1
@@ -256,8 +266,8 @@ class MainWindow(QMainWindow):
                     self.selected_identifiant = None
                 continue
 
-            distance = math.hypot(a.xa, a.ya)
-            if distance > radar_radius_km or a.vitesse < 200 or a.altitude <= 0:
+            # Hors radar, vitesse trop basse, altitude <= 0
+            if self.radar.is_outside(a) or a.vitesse < 200 or a.altitude <= 0:
                 self.sim.espace.avions.remove(a)
                 self.score -= 20
                 self.label_score.setText(f"Score: {self.score}")
@@ -267,7 +277,7 @@ class MainWindow(QMainWindow):
         self.radar.update_positions(self.sim.espace.avions, self.selected_identifiant)
         self.update_selected_info()
 
-    # --- Sélection ---
+    # --- Sélection d'avion ---
     def select_plane(self, item):
         self.selected_identifiant = item.text()
         self.update_selected_info()
@@ -296,14 +306,10 @@ class MainWindow(QMainWindow):
             self.label_selected.setText("Sélectionné : Aucun")
 
     # --- Contrôles ---
-    def monter_avion(self):
-        self.changer_altitude(1000)
-    def descendre_avion(self):
-        self.changer_altitude(-1000)
-    def accelerer_avion(self):
-        self.changer_vitesse(50)
-    def ralentir_avion(self):
-        self.changer_vitesse(-50)
+    def monter_avion(self): self.changer_altitude(1000)
+    def descendre_avion(self): self.changer_altitude(-1000)
+    def accelerer_avion(self): self.changer_vitesse(50)
+    def ralentir_avion(self): self.changer_vitesse(-50)
     def changer_cap(self, delta):
         ident = self.selected_identifiant
         if ident:
@@ -313,7 +319,6 @@ class MainWindow(QMainWindow):
                     break
         self.update_selected_info()
         self.radar.update_positions(self.sim.espace.avions, self.selected_identifiant)
-
     def changer_altitude(self, delta):
         ident = self.selected_identifiant
         if ident:
@@ -323,7 +328,6 @@ class MainWindow(QMainWindow):
                     break
         self.update_selected_info()
         self.radar.update_positions(self.sim.espace.avions, self.selected_identifiant)
-
     def changer_vitesse(self, delta):
         ident = self.selected_identifiant
         if ident:

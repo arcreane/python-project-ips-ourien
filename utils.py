@@ -34,7 +34,7 @@ class Simulation:
 
 # --------------------------------------------------------------------
 #  PARTIE 2 : Lancement global de l'application (ex-main.py)
-#  👉 ATTENTION : on NE lance rien ici, car interface.py exécutera ceci
+#   ATTENTION : on NE lance rien ici, car interface.py exécutera ceci
 # --------------------------------------------------------------------
 def lancer_application():
     """
@@ -57,7 +57,7 @@ def lancer_application():
 
 # --------------------------------------------------------------------
 #  PARTIE 2 : Lancement global de l'application (ex-main.py)
-#  👉 ATTENTION : on NE lance rien ici, car interface.py exécutera ceci
+#   ATTENTION : on NE lance rien ici, car interface.py exécutera ceci
 # --------------------------------------------------------------------
 def lancer_application():
     """
