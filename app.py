@@ -1,39 +1,34 @@
-
 # app.py
-# --- Dans app.py ---
 import math
 import time
 
 class Avion:
     ALTITUDE_MAX = 36000  # ft
 
-    class Avion:
-        def __init__(self, identifiant, vitesse, cap, altitude, xa, ya, urgence=False):
-            self.identifiant = identifiant
-            self.vitesse = vitesse  # en km/h
-            self.cap = cap  # en degrés
-            self.altitude = altitude  # en ft
-            self.xa = xa  # position x (km)
-            self.ya = ya  # position y (km)
-            self.urgence = urgence
+    def __init__(self, identifiant, vitesse, cap, altitude, xa, ya, urgence=False):
+        self.identifiant = identifiant
+        self.vitesse = vitesse  # en km/h
+        self.cap = cap  # en degrés
+        self.altitude = altitude  # en ft
+        self.xa = xa  # position x (km)
+        self.ya = ya  # position y (km)
+        self.urgence = urgence
 
-            self.spawn_time = time.time()
+        self.spawn_time = time.time()
 
-            # --- nouveaux attributs pour l’atterrissage ---
-            self.en_approche = False
-            self.termine_atterrissage = False
-            self.cible_x = None
-            self.cible_y = None
+        # --- nouveaux attributs pour l’atterrissage ---
+        self.en_approche = False
+        self.termine_atterrissage = False
+        self.cible_x = None
+        self.cible_y = None
 
     def demarrer_atterrissage(self, cible_x, cible_y):
-        """Passe l’avion en mode atterrissage vers une extrémité de piste."""
         self.en_approche = True
         self.termine_atterrissage = False
         self.cible_x = cible_x
         self.cible_y = cible_y
 
     def move(self, dt):
-        """Met à jour la position selon le cap et la vitesse (dt en secondes)."""
         v = self.vitesse / 3600.0  # km/s
         rad = math.radians(self.cap)
         self.xa += v * dt * math.cos(rad)
@@ -53,19 +48,14 @@ class Avion:
             self.altitude = 0
 
     def atterrir(self, center_x=0, center_y=0, distance_max=10, altitude_max=2000):
-        """Retourne True si l'avion est à portée pour atterrir et sous altitude max."""
         distance = math.hypot(self.xa - center_x, self.ya - center_y)
-        if distance <= distance_max and self.altitude <= altitude_max:
-            return True
-        return False
+        return distance <= distance_max and self.altitude <= altitude_max
 
     def sort_du_radar(self, rayon_max):
-        """Retourne True si l'avion est hors du rayon du radar."""
         distance = math.hypot(self.xa, self.ya)
         return distance > rayon_max
 
     def temps_urgence_ecoule(self, duree_sec=10):
-        """Retourne True si l'avion urgent dépasse le temps imparti."""
         if not self.urgence:
             return False
         return (time.time() - self.spawn_time) > duree_sec
